@@ -2,6 +2,9 @@
 
 Application web bilingue (**Français 🇫🇷 / Anglais 🇬🇧**) et **Progressive Web App (PWA)** dédiée au suivi en temps réel des 6 tournois officiels de Grand Sumo (*Honbasho*) de la saison **2026**, propulsée par [sumo-api.com](https://www.sumo-api.com) et inspirée de [sumostats.com](https://sumostats.com).
 
+🌐 **Application en ligne 24/24 (Cloud Run `europe-west9` — Mobile & iPhone PWA)** :  
+👉 **[https://sumostats-117321059778.europe-west9.run.app](https://sumostats-117321059778.europe-west9.run.app)**
+
 ---
 
 ## ✨ Fonctionnalités Principales
