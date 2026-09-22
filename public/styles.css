@@ -931,9 +931,14 @@ body.spoilers-masked .rikishi-cell.is-loser {
   opacity: 1;
 }
 body.spoilers-masked .hoshi-win-Loss-indicator,
-body.spoilers-masked .kimarite-pill {
-  filter: blur(5px);
-  user-select: none;
+body.spoilers-masked .kimarite-pill,
+body.spoilers-masked .record-badge,
+body.spoilers-masked .hoshitori-mini-strip,
+body.spoilers-masked #daily-stats-grid,
+body.spoilers-masked #basho-prizes-strip,
+body.spoilers-masked .yusho-mini-pill,
+body.spoilers-masked #standings-section {
+  display: none !important;
 }
 
 .hoshi-win-Loss-indicator {

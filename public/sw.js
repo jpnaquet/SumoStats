@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sumostats-2026-v1';
+const CACHE_NAME = 'sumostats-2026-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -29,19 +29,16 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) {
     return;
   }
-  // Stale-while-revalidate for static UI assets
+  // Network-first with cache fallback for static UI assets
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && event.request.method === 'GET') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && event.request.method === 'GET') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

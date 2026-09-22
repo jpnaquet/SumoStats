@@ -973,7 +973,7 @@ function renderDailyStatsAndMatches(banzukeMap) {
     return (
       (m.eastShikona || '').toLowerCase().includes(q) ||
       (m.westShikona || '').toLowerCase().includes(q) ||
-      (m.kimarite || '').toLowerCase().includes(q) ||
+      (!state.spoilersMasked && (m.kimarite || '').toLowerCase().includes(q)) ||
       (m.eastRank || '').toLowerCase().includes(q) ||
       (m.westRank || '').toLowerCase().includes(q)
     );
@@ -1516,6 +1516,8 @@ function initApp() {
     document.getElementById('spoiler-label').textContent = state.spoilersMasked
       ? dict.spoilerHidden
       : dict.spoilerShown;
+    const banzukeMap = state.banzukeCache[`${state.selectedBashoId}-${state.selectedDivision}`] || new Map();
+    renderDailyStatsAndMatches(banzukeMap);
   });
 
   // Theme switcher
