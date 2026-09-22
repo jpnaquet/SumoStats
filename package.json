@@ -1,0 +1,10 @@
+{
+  "name": "sumostats-2026",
+  "version": "1.0.0",
+  "description": "Application de statistiques et résultats des tournois de Grand Sumo 2026 propulsée par sumo-api.com (REST API & Webhooks HMAC-SHA256)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}

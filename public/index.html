@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SumoStats 2026 — Résultats & Statistiques des Tournois Grand Sumo (Sumo-API)</title>
+  <meta name="description" content="Suivez tous les tournois de Grand Sumo de l'année 2026 (Honbasho) jour par jour (1 à 15), résultats Torikumi en direct, Banzuke, Hoshitori et Webhooks Sumo-API." />
+  <meta name="theme-color" content="#0b0f17" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SumoStats" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Top Navigation Bar (Inspired by Sumostats.com) -->
+  <header class="topbar" id="top-navigation">
+    <div class="container topbar-inner">
+      <div class="brand" id="brand-logo">
+        <div class="dohyo-emblem" aria-hidden="true">
+          <span class="dohyo-kanji">大相撲</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <span class="brand-name">SUMOSTATS</span>
+            <span class="brand-year-badge">2026</span>
+          </div>
+          <span class="brand-subtitle" data-i18n="brandSubtitle">Base de données Grand Sumo • Torikumi &amp; Webhooks Live</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Language Dropdown Selector (FR / EN with Flags) -->
+        <div class="lang-selector-wrapper">
+          <select id="lang-select" class="lang-select" aria-label="Choisir la langue / Select language">
+            <option value="fr">🇫🇷 FR — Français</option>
+            <option value="en">🇬🇧 EN — English</option>
+          </select>
+        </div>
+
+        <!-- iPhone / PWA Access Button -->
+        <button type="button" class="action-pill" id="btn-open-mobile" title="Installer ou ouvrir sur iPhone (QR Code & PWA)">
+          <span>📱</span>
+          <span class="pill-text-desktop">iPhone / PWA</span>
+        </button>
+
+        <!-- Spoiler Mode Toggle (Signature Sumostats feature) -->
+        <button type="button" class="action-pill" id="btn-spoiler-toggle" data-i18n-title="spoilerBtnTitle" title="Masquer ou afficher les vainqueurs des combats">
+          <span class="status-dot" id="spoiler-dot"></span>
+          <span id="spoiler-label">Spoilers : Affichés</span>
+        </button>
+
+        <!-- Webhooks Drawer Button -->
+        <button type="button" class="action-pill webhook-pill" id="btn-open-webhooks" data-i18n-title="webhookBtnTitle" title="Gérer et tester les Webhooks Sumo-API">
+          <span class="webhook-pulse" id="webhook-live-indicator"></span>
+          <span data-i18n="webhookBtnLabel">Webhooks Sumo-API</span>
+          <span class="webhook-counter" id="webhook-event-count">1</span>
+        </button>
+
+        <!-- Theme Switcher (Dark Slate vs Classic Washi Paper) -->
+        <button type="button" class="icon-btn" id="btn-theme-toggle" data-i18n-title="themeBtnTitle" title="Basculer le thème Sombre / Papier Washi" aria-label="Basculer le thème">
+          <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <!-- Hero / Section 1: Calendrier des 6 Tournois 2026 avec ligne de Jours 1 à 15 -->
+    <section class="section-card basho-selector-section" aria-labelledby="heading-tournois-2026">
+      <div class="section-header">
+        <div>
+          <div class="section-kicker" data-i18n="calendarKicker">CALENDRIER OFFICIEL HONBASHO 2026 • SUMO-API.COM</div>
+          <h1 id="heading-tournois-2026" class="section-title" data-i18n="calendarTitle">
+            Tournois de l'année 2026 &amp; Sélection par Jour (1 à 15)
+          </h1>
+          <p class="section-desc" data-i18n="calendarDesc">
+            Cliquez sur un numéro de jour (<strong>1</strong> <em>Shonichi</em> à <strong>15</strong> <em>Senshuraku</em>) sur la ligne d'un tournoi pour charger instantanément tous les combats et statistiques du jour.
+          </p>
+        </div>
+
+        <div class="legend-strip" aria-label="Légende des jours">
+          <span class="legend-item"><span class="legend-swatch active-swatch"></span> <span data-i18n="legendSelected">Jour sélectionné</span></span>
+          <span class="legend-item"><span class="legend-swatch available-swatch"></span> <span data-i18n="legendAvailable">Résultats disponibles</span></span>
+          <span class="legend-item"><span class="legend-swatch special-swatch"></span> <span data-i18n="legendSpecial">J1 / J8 / J15</span></span>
+        </div>
+      </div>
+
+      <!-- List of the 6 Honbasho of 2026 -->
+      <div class="basho-list" id="basho-2026-list" role="list">
+        <!-- Populated dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- Section 2: Résultats du Tournoi et du Jour sélectionné (Torikumi & Statistiques) -->
+    <section class="results-workspace" id="results-section" aria-labelledby="selected-basho-day-title">
+      <!-- Active Basho + Day Header Banner -->
+      <div class="results-banner">
+        <div class="results-banner-left">
+          <div class="active-basho-meta">
+            <span class="basho-code-tag" id="active-basho-code">202609</span>
+            <span class="basho-jp-tag" id="active-basho-jp">九月場所</span>
+            <span class="basho-venue-tag" id="active-basho-venue">Tokyo • Ryōgoku Kokugikan</span>
+          </div>
+          <h2 id="selected-basho-day-title" class="results-main-title">
+            Aki Basho (Septembre 2026) — Jour 8
+          </h2>
+          <p class="results-subtitle" id="active-day-date-label">
+            Chargement des résultats officiels depuis sumo-api.com…
+          </p>
+        </div>
+
+        <!-- Quick Day Stepper (< Jour précédent | Jour suivant >) -->
+        <div class="day-quick-nav">
+          <button type="button" class="nav-step-btn" id="btn-prev-day" data-i18n="prevDayBtn" data-i18n-title="prevDayTitle" title="Jour précédent (Flèche gauche)">
+            ← Jour préc.
+          </button>
+          <span class="current-day-pill" id="current-day-indicator">Jour 8 / 15</span>
+          <button type="button" class="nav-step-btn" id="btn-next-day" data-i18n="nextDayBtn" data-i18n-title="nextDayTitle" title="Jour suivant (Flèche droite)">
+            Jour suiv. →
+          </button>
+        </div>
+      </div>
+
+      <!-- Basho Yusho & Special Prizes Strip (shown when tournament has Yusho/Sansho data) -->
+      <div class="prizes-strip hidden" id="basho-prizes-strip">
+        <!-- Populated dynamically when Yusho / Special Prizes exist -->
+      </div>
+
+      <!-- Daily KPI Summary Row -->
+      <div class="stats-kpi-grid" id="daily-stats-grid">
+        <div class="kpi-card">
+          <div class="kpi-label" data-i18n="kpiBoutsLabel">Combats du jour</div>
+          <div class="kpi-value" id="stat-total-bouts">—</div>
+          <div class="kpi-sub" id="stat-division-label">Division Makuuchi</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label" data-i18n="kpiBalanceLabel">Balance Est (東) vs Ouest (西)</div>
+          <div class="kpi-split-row">
+            <span class="east-score" id="stat-east-wins">Est: 0</span>
+            <span class="west-score" id="stat-west-wins">Ouest: 0</span>
+          </div>
+          <div class="balance-bar-track" aria-hidden="true">
+            <div class="balance-bar-east" id="stat-east-bar" style="width: 50%"></div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label" data-i18n="kpiKimariteLabel">Kimarite (Techniques) dominants</div>
+          <div class="kpi-value kpi-value-sm" id="stat-top-kimarite">—</div>
+          <div class="kpi-sub" id="stat-kimarite-variety">Diversité technique du jour</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label" data-i18n="kpiLeaderLabel">En tête du Basho (Makuuchi)</div>
+          <div class="kpi-value kpi-value-sm" id="stat-basho-leader">—</div>
+          <div class="kpi-sub" id="stat-basho-leader-sub">Course au Yūshō</div>
+        </div>
+      </div>
+
+      <!-- Controls Bar: Division Tabs + Search / Filter + Order Toggle -->
+      <div class="controls-bar">
+        <div class="division-tabs" id="division-tabs" role="tablist" aria-label="Divisions Grand Sumo">
+          <button type="button" role="tab" aria-selected="true" class="div-tab active" data-division="Makuuchi" id="tab-Makuuchi">
+            Makuuchi <span class="div-kanji">幕内</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" class="div-tab" data-division="Juryo" id="tab-Juryo">
+            Jūryō <span class="div-kanji">十両</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" class="div-tab" data-division="Makushita" id="tab-Makushita">
+            Makushita <span class="div-kanji">幕下</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" class="div-tab" data-division="Sandanme" id="tab-Sandanme">
+            Sandanme <span class="div-kanji">三段目</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" class="div-tab" data-division="Jonidan" id="tab-Jonidan">
+            Jonidan <span class="div-kanji">序二段</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" class="div-tab" data-division="Jonokuchi" id="tab-Jonokuchi">
+            Jonokuchi <span class="div-kanji">序ノ口</span>
+          </button>
+        </div>
+
+        <div class="filter-controls">
+          <div class="search-box">
+            <input
+              type="search"
+              id="input-search-rikishi"
+              data-i18n-placeholder="searchPlaceholder"
+              placeholder="Filtrer par lutteur (ex: Onosato, Kirishima) ou kimarite…"
+              aria-label="Filtrer par lutteur ou kimarite"
+            />
+          </div>
+          <button type="button" class="sort-btn" id="btn-toggle-order" data-i18n-title="sortBtnTitle" title="Inverser l'ordre d'affichage des combats">
+            <span id="sort-order-label">Ordre : Musubi no Ichiban ↓</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Match Results Table / Cards (Torikumi - Sumostats Style) -->
+      <div class="torikumi-container" id="torikumi-container">
+        <div class="torikumi-table-header" aria-hidden="true">
+          <div class="col-east-header">
+            <span class="side-tag east-tag" data-i18n="headerEastTag">東 EST (HIGASHI)</span>
+            <span class="header-hint" data-i18n="headerEastHint">Hoshitori 15j • Bilan • Rang &amp; Shikona</span>
+          </div>
+          <div class="col-center-header">
+            <span data-i18n="headerCenterTag">COMBAT &amp; KIMARITE</span>
+          </div>
+          <div class="col-west-header">
+            <span class="header-hint" data-i18n="headerWestHint">Rang &amp; Shikona • Bilan • Hoshitori 15j</span>
+            <span class="side-tag west-tag" data-i18n="headerWestTag">西 OUEST (NISHI)</span>
+          </div>
+        </div>
+
+        <div id="torikumi-matches-list" class="torikumi-matches-list">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Classement des Rikishis depuis le début du tournoi (Course au Yusho / Banzuke Standings) -->
+    <section class="section-card standings-section" id="standings-section" aria-labelledby="standings-section-title">
+      <div class="section-header standings-header">
+        <div>
+          <div class="section-kicker" data-i18n="standingsKicker">CLASSEMENT CUMULÉ DU TOURNOI • COURSE AU YŪSHŌ</div>
+          <h2 id="standings-section-title" class="section-title">
+            Classement des Rikishis — Aki Basho (Jour 1 → Jour 8)
+          </h2>
+          <p class="section-desc" id="standings-section-desc" data-i18n="standingsDesc">
+            Classement établi selon le nombre de victoires cumulées depuis le Jour 1 du tournoi jusqu'au jour sélectionné (départage par défaites puis rang Banzuke officiel).
+          </p>
+        </div>
+
+        <div class="standings-controls">
+          <div class="standings-filter-pills" id="standings-filter-group" role="group" aria-label="Filtre du classement">
+            <button type="button" class="st-filter-btn active" data-st-filter="all" id="st-filter-all" data-i18n="stFilterAll">
+              Tous les Rikishis
+            </button>
+            <button type="button" class="st-filter-btn" data-st-filter="top10" id="st-filter-top10" data-i18n="stFilterTop10">
+              🏆 Course au Yūshō (Top 10)
+            </button>
+            <button type="button" class="st-filter-btn" data-st-filter="kk" id="st-filter-kk" data-i18n="stFilterKk">
+              Kachi-koshi (8+ V)
+            </button>
+            <button type="button" class="st-filter-btn" data-st-filter="sanyaku" id="st-filter-sanyaku" data-i18n="stFilterSanyaku">
+              Sanyaku (Y / O / S / K)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standings Podium / Leaders Highlight Strip -->
+      <div class="standings-podium-grid" id="standings-podium-grid">
+        <!-- Populated dynamically with Top 3 leaders at selected day -->
+      </div>
+
+      <!-- Full Standings Table -->
+      <div class="standings-table-wrapper">
+        <table class="standings-table" id="standings-table">
+          <thead>
+            <tr>
+              <th class="col-pos" data-i18n="stColPos">Pos.</th>
+              <th class="col-rikishi" data-i18n="stColRikishi">Rikishi (Lutteur)</th>
+              <th class="col-rank" data-i18n="stColRank">Rang Banzuke</th>
+              <th class="col-record" data-i18n="stColRecord">Bilan (V - D)</th>
+              <th class="col-status" data-i18n="stColStatus">Statut</th>
+              <th class="col-winrate" data-i18n="stColWinrate">% Victoires</th>
+              <th class="col-hoshitori" data-i18n="stColHoshitori">Progression Jour 1 → Jour sélectionné (Hoshitori)</th>
+              <th class="col-kimarite" data-i18n="stColKimarite">Kimarite favori</th>
+            </tr>
+          </thead>
+          <tbody id="standings-tbody">
+            <!-- Populated dynamically by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Head-to-Head (H2H) & Rikishi Details Modal -->
+  <div class="modal-backdrop hidden" id="h2h-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="h2h-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker" data-i18n="h2hModalKicker">FACE-À-FACE HISTORIQUE • SUMO-API</span>
+          <h3 id="h2h-modal-title" class="modal-title">Duel &amp; Historique des confrontations</h3>
+        </div>
+        <button type="button" class="close-btn" id="btn-close-h2h" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body" id="h2h-modal-content">
+        <!-- Populated dynamically when user clicks a bout -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Webhooks Sumo-API Slide-Over Drawer -->
+  <div class="modal-backdrop hidden" id="webhook-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="webhook-modal-title">
+    <div class="drawer-panel">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker" data-i18n="whModalKicker">TEMPS RÉEL &amp; SIGNATURES HMAC-SHA256</span>
+          <h3 id="webhook-modal-title" class="modal-title" data-i18n="whModalTitle">Centre Webhooks Sumo-API.com</h3>
+        </div>
+        <button type="button" class="close-btn" id="btn-close-webhooks" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="webhook-explainer">
+          <p data-i18n="whExplainer">
+            L'API <strong>sumo-api.com</strong> permet de s'abonner à 4 événements push (<code>newBasho</code>, <code>newMatches</code>, <code>matchResults</code> à 18h15 JST, et <code>endBasho</code>). Notre serveur vérifie l'en-tête cryptographique <code>X-Webhook-Signature</code> (HMAC-SHA256) et répond <code>204 No Content</code>.
+          </p>
+        </div>
+
+        <!-- Simulate / Trigger Webhook Test Section -->
+        <div class="webhook-box">
+          <h4 class="webhook-box-title" data-i18n="whSimTitle">Tester / Simuler un événement Webhook en direct</h4>
+          <p class="webhook-box-sub" data-i18n="whSimSub">
+            Déclenchez un événement signé HMAC-SHA256 pour tester la réception temps réel (SSE) et la mise à jour instantanée de l'application :
+          </p>
+          <div class="webhook-sim-buttons">
+            <button type="button" class="sim-btn" data-sim-type="matchResults" id="btn-sim-matchResults" data-i18n="whSimMatchResults">
+              ⚡ Simuler <code>matchResults</code> (18:15 JST)
+            </button>
+            <button type="button" class="sim-btn" data-sim-type="newMatches" id="btn-sim-newMatches" data-i18n="whSimNewMatches">
+              📋 Simuler <code>newMatches</code> (Torikumi J+1)
+            </button>
+            <button type="button" class="sim-btn" data-sim-type="newBasho" id="btn-sim-newBasho" data-i18n="whSimNewBasho">
+              🏮 Simuler <code>newBasho</code> (Kyushu 202611)
+            </button>
+            <button type="button" class="sim-btn" data-sim-type="endBasho" id="btn-sim-endBasho" data-i18n="whSimEndBasho">
+              🏆 Simuler <code>endBasho</code> (Yūshō &amp; Sanshō)
+            </button>
+          </div>
+        </div>
+
+        <!-- Subscription Form to Sumo-API `/api/webhook/subscribe` -->
+        <form class="webhook-box" id="form-webhook-subscribe">
+          <h4 class="webhook-box-title" data-i18n="whSubFormTitle">Configuration d'abonnement Sumo-API (<code>POST /api/webhook/subscribe</code>)</h4>
+          <div class="form-row">
+            <label for="wh-name" data-i18n="whNameLabel">Identifiant unique (<code>name</code>)</label>
+            <input type="text" id="wh-name" value="sumostats-2026-client" required />
+          </div>
+          <div class="form-row">
+            <label for="wh-destination" data-i18n="whDestLabel">URL de destination (<code>destination</code>)</label>
+            <input type="url" id="wh-destination" value="https://sumostats.run.app/api/webhook/ingest" required />
+          </div>
+          <div class="form-row">
+            <label for="wh-secret" data-i18n="whSecretLabel">Clé secrète HMAC-SHA256 (<code>secret</code>)</label>
+            <input type="text" id="wh-secret" value="sumo-2026-hmac-secret-key" required />
+          </div>
+          <div class="form-checkboxes">
+            <label><input type="checkbox" id="wh-sub-newBasho" checked /> <code>newBasho</code></label>
+            <label><input type="checkbox" id="wh-sub-newMatches" checked /> <code>newMatches</code></label>
+            <label><input type="checkbox" id="wh-sub-matchResults" checked /> <code>matchResults</code></label>
+            <label><input type="checkbox" id="wh-sub-endBasho" checked /> <code>endBasho</code></label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-btn" id="btn-save-webhook" data-i18n="whSaveBtn">Enregistrer &amp; S'abonner sur sumo-api.com</button>
+            <span class="webhook-save-status" id="webhook-save-status"></span>
+          </div>
+        </form>
+
+        <!-- Real-Time Event Log -->
+        <div class="webhook-box">
+          <div class="webhook-log-header">
+            <h4 class="webhook-box-title" data-i18n="whLogTitle">Journal des événements reçus (Flux SSE en direct)</h4>
+            <span class="sse-badge" id="sse-connection-badge" data-i18n="whConnectedBadge">● Connecté</span>
+          </div>
+          <div class="webhook-events-log" id="webhook-events-log">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- iPhone / Mobile PWA Installation & QR Code Modal -->
+  <div class="modal-backdrop hidden" id="mobile-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="mobile-modal-title">
+    <div class="modal-card mobile-pwa-modal">
+      <div class="modal-header">
+        <div>
+          <span class="section-eyebrow">IOS SAFARI • PROGRESSIVE WEB APP</span>
+          <h3 class="modal-title" id="mobile-modal-title">Accéder &amp; Installer SumoStats sur iPhone</h3>
+        </div>
+        <button type="button" class="icon-btn" id="btn-close-mobile" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="mobile-pwa-grid">
+          <div class="qr-code-box">
+            <img id="mobile-qr-img" alt="QR Code SumoStats iPhone" width="180" height="180" />
+            <span class="qr-caption">Scannez avec l'appareil photo iPhone</span>
+          </div>
+          <div class="mobile-pwa-steps">
+            <h4>Installation sur l'écran d'accueil iOS :</h4>
+            <ol class="ios-steps-list">
+              <li>Ouvrez l'URL publique Cloud Run dans <strong>Safari</strong> sur votre iPhone (ou scannez le QR Code).</li>
+              <li>Appuyez sur l'icône <strong>Partager</strong> (carré avec flèche vers le haut <code>⬆️</code> en bas de l'écran).</li>
+              <li>Faites défiler et appuyez sur <strong>« Sur l'écran d'accueil »</strong> (<em>Add to Home Screen</em>), puis sur <strong>Ajouter</strong>.</li>
+            </ol>
+            <div class="mobile-url-bar">
+              <input type="text" id="mobile-share-url" readonly />
+              <button type="button" class="primary-btn" id="btn-copy-mobile-url">Copier l'URL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification for Live Webhook Events -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div data-i18n="footerPoweredBy">
+        <strong>SumoStats 2026</strong> • Propulsé par <a href="https://www.sumo-api.com" target="_blank" rel="noreferrer">sumo-api.com</a> &amp; inspiré par <a href="https://sumostats.com" target="_blank" rel="noreferrer">sumostats.com</a>
+      </div>
+      <div class="footer-shortcuts" data-i18n="footerShortcuts">
+        Astuce : Utilisez les touches <kbd>←</kbd> et <kbd>→</kbd> du clavier pour naviguer entre les jours 1 à 15.
+      </div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
