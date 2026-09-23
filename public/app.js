@@ -704,7 +704,32 @@ async function ensureBanzukeLoaded(bashoId, division) {
   }
 }
 
-function getRikishiDayStats(rikishiEntry, targetDay) {
+function getKkThreshold(division, rankStr) {
+  if (rankStr) {
+    if (
+      rankStr.startsWith('Yokozuna') ||
+      rankStr.startsWith('Ozeki') ||
+      rankStr.startsWith('Sekiwake') ||
+      rankStr.startsWith('Komusubi') ||
+      rankStr.startsWith('Maegashira') ||
+      rankStr.startsWith('Juryo')
+    ) {
+      return 8;
+    }
+    if (
+      rankStr.startsWith('Makushita') ||
+      rankStr.startsWith('Sandanme') ||
+      rankStr.startsWith('Jonidan') ||
+      rankStr.startsWith('Jonokuchi')
+    ) {
+      return 4;
+    }
+  }
+  const isSekitori = division === 'Makuuchi' || division === 'Juryo';
+  return isSekitori ? 8 : 4;
+}
+
+function getRikishiDayStats(rikishiEntry, targetDay, highlightDay = targetDay) {
   const dict = t();
   if (!rikishiEntry || !Array.isArray(rikishiEntry.record)) {
     return {
@@ -757,7 +782,7 @@ function getRikishiDayStats(rikishiEntry, targetDay) {
       }
     }
 
-    const currentClass = dayIdx === targetDay ? 'is-current-day' : '';
+    const currentClass = dayIdx === highlightDay ? 'is-current-day' : '';
     dots.push(`<span class="h-dot ${dotClass} ${currentClass}" title="${dotTitle}"></span>`);
   }
 
@@ -1000,6 +1025,7 @@ function renderDailyStatsAndMatches(banzukeMap) {
   }
 
   const kimariteDict = KIMARITE_I18N[state.lang] || KIMARITE_I18N.fr;
+  const statsTargetDay = state.spoilersMasked ? Math.max(0, state.selectedDay - 1) : state.selectedDay;
 
   listEl.innerHTML = filtered
     .map((bout) => {
@@ -1010,8 +1036,13 @@ function renderDailyStatsAndMatches(banzukeMap) {
       const eastEntry = banzukeMap ? banzukeMap.get(bout.eastId) : null;
       const westEntry = banzukeMap ? banzukeMap.get(bout.westId) : null;
 
-      const eastStats = getRikishiDayStats(eastEntry, state.selectedDay);
-      const westStats = getRikishiDayStats(westEntry, state.selectedDay);
+      const eastStats = getRikishiDayStats(eastEntry, statsTargetDay, state.selectedDay);
+      const westStats = getRikishiDayStats(westEntry, statsTargetDay, state.selectedDay);
+
+      const eastKkThreshold = getKkThreshold(state.selectedDivision, bout.eastRank);
+      const westKkThreshold = getKkThreshold(state.selectedDivision, bout.westRank);
+      const eastIsKk = eastStats.wins >= eastKkThreshold;
+      const westIsKk = westStats.wins >= westKkThreshold;
 
       const eastShortRank = formatShortRank(bout.eastRank);
       const westShortRank = formatShortRank(bout.westRank);
@@ -1038,7 +1069,7 @@ function renderDailyStatsAndMatches(banzukeMap) {
                 ${eastStats.recordText ? `<span class="record-badge">(${eastStats.recordText})</span>` : ''}
                 <span class="rank-badge ${eastTierClass}" title="${bout.eastRank}">${eastShortRank}</span>
                 ${eastStats.shikonaJp ? `<span class="shikona-jp">${eastStats.shikonaJp}</span>` : ''}
-                <span class="shikona-en">${bout.eastShikona}</span>
+                <span class="shikona-en ${eastIsKk ? 'is-kachikoshi' : ''}">${bout.eastShikona}</span>
               </div>
               ${eastStats.hoshitoriHtml}
             </div>
@@ -1067,7 +1098,7 @@ function renderDailyStatsAndMatches(banzukeMap) {
             </div>
             <div class="rikishi-main-info">
               <div class="rikishi-name-line">
-                <span class="shikona-en">${bout.westShikona}</span>
+                <span class="shikona-en ${westIsKk ? 'is-kachikoshi' : ''}">${bout.westShikona}</span>
                 ${westStats.shikonaJp ? `<span class="shikona-jp">${westStats.shikonaJp}</span>` : ''}
                 <span class="rank-badge ${westTierClass}" title="${bout.westRank}">${westShortRank}</span>
                 ${westStats.recordText ? `<span class="record-badge">(${westStats.recordText})</span>` : ''}
@@ -1115,11 +1146,12 @@ function renderBashoStandings(banzukeMap) {
 
   const isSekitori = state.selectedDivision === 'Makuuchi' || state.selectedDivision === 'Juryo';
   const kkThreshold = isSekitori ? 8 : 4;
+  const statsTargetDay = state.spoilersMasked ? Math.max(0, state.selectedDay - 1) : state.selectedDay;
 
   const rows = [];
   if (banzukeMap && banzukeMap.size > 0) {
     for (const r of banzukeMap.values()) {
-      const dayStats = getRikishiDayStats(r, state.selectedDay);
+      const dayStats = getRikishiDayStats(r, statsTargetDay, state.selectedDay);
       const totalDecisions = dayStats.wins + dayStats.losses;
       const winPct = totalDecisions > 0 ? Math.round((dayStats.wins / totalDecisions) * 100) : 0;
 
@@ -1161,13 +1193,14 @@ function renderBashoStandings(banzukeMap) {
   podiumEl.innerHTML = top3
     .map((r, idx) => {
       const tierClass = getRankTierClass(r.rank);
+      const isKk = r.wins >= kkThreshold;
       return `
         <div class="podium-card ${idx === 0 ? 'podium-rank-1' : ''}">
           <div class="podium-left">
             <div class="podium-medal">#${idx + 1}</div>
             <div>
               <div class="podium-name">
-                <span>${r.shikonaEn}</span>
+                <span class="shikona-en ${isKk ? 'is-kachikoshi' : ''}">${r.shikonaEn}</span>
                 ${r.shikonaJp ? `<span class="shikona-jp">${r.shikonaJp}</span>` : ''}
                 <span class="rank-badge ${tierClass}">${r.shortRank}</span>
               </div>
@@ -1224,7 +1257,7 @@ function renderBashoStandings(banzukeMap) {
           </td>
           <td class="col-rikishi">
             <div class="st-rikishi-cell">
-              <span class="shikona-en">${r.shikonaEn}</span>
+              <span class="shikona-en ${isKk ? 'is-kachikoshi' : ''}">${r.shikonaEn}</span>
               ${r.shikonaJp ? `<span class="shikona-jp">${r.shikonaJp}</span>` : ''}
             </div>
           </td>
@@ -1269,11 +1302,28 @@ async function openHeadToHeadModal(eastId, westId, eastName, westName) {
 
   try {
     const data = await fetchSumoApi(`/rikishi/${eastId}/matches/${westId}`);
-    const eastWins = data.rikishiWins || 0;
-    const westWins = data.opponentWins || 0;
+    const allMatches = Array.isArray(data.matches) ? data.matches : [];
+
+    // When spoilers are masked, only include confrontations strictly prior to the selected tournament (up to tournament N-1)
+    const sourceMatches = state.spoilersMasked
+      ? allMatches.filter((m) => String(m.bashoId || '') < String(state.selectedBashoId))
+      : allMatches;
+
+    let eastWins = 0;
+    let westWins = 0;
+    if (state.spoilersMasked) {
+      for (const m of sourceMatches) {
+        if (Number(m.winnerId) === Number(eastId)) eastWins++;
+        else if (Number(m.winnerId) === Number(westId)) westWins++;
+      }
+    } else {
+      eastWins = data.rikishiWins || 0;
+      westWins = data.opponentWins || 0;
+    }
+
     const total = eastWins + westWins;
     const eastPct = total > 0 ? Math.round((eastWins / total) * 100) : 50;
-    const matches = Array.isArray(data.matches) ? data.matches.slice(0, 12) : [];
+    const matches = sourceMatches.slice(0, 12);
 
     const historyRows = matches
       .map(
@@ -1518,6 +1568,7 @@ function initApp() {
       : dict.spoilerShown;
     const banzukeMap = state.banzukeCache[`${state.selectedBashoId}-${state.selectedDivision}`] || new Map();
     renderDailyStatsAndMatches(banzukeMap);
+    renderBashoStandings(banzukeMap);
   });
 
   // Theme switcher

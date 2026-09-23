@@ -931,9 +931,7 @@ body.spoilers-masked .rikishi-cell.is-loser {
   opacity: 1;
 }
 body.spoilers-masked .hoshi-win-Loss-indicator,
-body.spoilers-masked .kimarite-pill,
-body.spoilers-masked .record-badge,
-body.spoilers-masked .hoshitori-mini-strip,
+body.spoilers-masked .bout-center-cell .kimarite-pill,
 body.spoilers-masked #daily-stats-grid,
 body.spoilers-masked #basho-prizes-strip,
 body.spoilers-masked .yusho-mini-pill,
@@ -996,6 +994,17 @@ body.spoilers-masked #standings-section {
   font-size: 0.96rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.shikona-en.is-kachikoshi,
+.rikishi-cell.is-winner .shikona-en.is-kachikoshi,
+body.spoilers-masked .rikishi-cell.is-winner .shikona-en.is-kachikoshi {
+  background: #fef08a;
+  color: #0f172a;
+  padding: 0.08rem 0.42rem;
+  border-radius: 4px;
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.65);
 }
 
 .shikona-jp {
