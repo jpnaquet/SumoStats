@@ -47,6 +47,7 @@ const I18N = {
     stFilterAll: 'Tous les Rikishis',
     stFilterTop10: '🏆 Course au Yūshō (Top 10)',
     stFilterKk: 'Kachi-koshi (Majorité V)',
+    stFilterMk: 'Make-koshi (Majorité D)',
     stFilterSanyaku: 'Sanyaku (Y / O / S / K)',
     stColPos: 'Pos.',
     stColRikishi: 'Rikishi (Lutteur)',
@@ -113,8 +114,8 @@ const I18N = {
     startOfBasho: 'Début de tournoi',
     afterDay: (d) => `Après le Jour ${d}`,
     ongoingOrBanzuke: 'En cours / Banzuke',
-    noBoutsPublished: (name, id, day, div) =>
-      `Aucun combat publié sur sumo-api.com pour <strong>${name} (${id}) — Jour ${day}</strong> (${div}).<br/><span style="font-size:0.82rem;opacity:0.8">Le Torikumi est publié chaque jour vers 18h00 JST pendant le tournoi. Essayez un tournoi terminé (ex: Janvier 202601 à Juillet 202607) ou les jours 1 à 10 de Septembre 202609 !</span>`,
+    noBoutsPublished: (name, id, day, div, maxDay = 11) =>
+      `Aucun combat publié sur sumo-api.com pour <strong>${name} (${id}) — Jour ${day}</strong> (${div}).<br/><span style="font-size:0.82rem;opacity:0.8">Le Torikumi est publié chaque jour vers 18h00 JST pendant le tournoi. Essayez un tournoi terminé (ex: Janvier 202601 à Juillet 202607) ou les jours 1 à ${maxDay} de Septembre 202609 !</span>`,
     noFilterMatch: (q) => `Aucun combat ne correspond au filtre « <strong>${q}</strong> ».`,
     boutNumber: (n) => `COMBAT #${n}`,
     viewH2h: 'Voir H2H ↗',
@@ -177,6 +178,7 @@ const I18N = {
     stFilterAll: 'All Rikishi',
     stFilterTop10: '🏆 Yūshō Race (Top 10)',
     stFilterKk: 'Kachi-koshi (Majority W)',
+    stFilterMk: 'Make-koshi (Majority L)',
     stFilterSanyaku: 'Sanyaku (Y / O / S / K)',
     stColPos: 'Pos.',
     stColRikishi: 'Rikishi (Wrestler)',
@@ -243,8 +245,8 @@ const I18N = {
     startOfBasho: 'Tournament start',
     afterDay: (d) => `After Day ${d}`,
     ongoingOrBanzuke: 'Ongoing / Banzuke',
-    noBoutsPublished: (name, id, day, div) =>
-      `No bouts published on sumo-api.com for <strong>${name} (${id}) — Day ${day}</strong> (${div}).<br/><span style="font-size:0.82rem;opacity:0.8">Torikumi is released daily around 18:00 JST during the tournament. Try a completed basho (Jan 202601 – Jul 202607) or Days 1 to 10 of September 202609!</span>`,
+    noBoutsPublished: (name, id, day, div, maxDay = 11) =>
+      `No bouts published on sumo-api.com for <strong>${name} (${id}) — Day ${day}</strong> (${div}).<br/><span style="font-size:0.82rem;opacity:0.8">Torikumi is released daily around 18:00 JST during the tournament. Try a completed basho (Jan 202601 – Jul 202607) or Days 1 to ${maxDay} of September 202609!</span>`,
     noFilterMatch: (q) => `No bouts match the filter “<strong>${q}</strong>”.`,
     boutNumber: (n) => `BOUT #${n}`,
     viewH2h: 'View H2H ↗',
@@ -267,6 +269,58 @@ const I18N = {
   },
 };
 
+/**
+ * Compute dynamic tournament status, current day (1..15), and baseline available results day
+ * based on Tokyo calendar date & hour (JST, UTC+9).
+ */
+function computeBashoDynamicTiming(startDateStr, endDateStr, upcomingLabel) {
+  const nowMs = Date.now();
+  const jstDate = new Date(nowMs + 9 * 3600 * 1000);
+  const jstMidnightMs = Date.UTC(
+    jstDate.getUTCFullYear(),
+    jstDate.getUTCMonth(),
+    jstDate.getUTCDate()
+  );
+  const jstHour = jstDate.getUTCHours();
+
+  const startParts = startDateStr.split('-').map(Number);
+  const endParts = endDateStr.split('-').map(Number);
+  const startMs = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
+  const endMs = Date.UTC(endParts[0], endParts[1] - 1, endParts[2]);
+
+  if (jstMidnightMs < startMs) {
+    return {
+      status: 'upcoming',
+      currentDay: 0,
+      maxAvailableDay: 0,
+      statusLabel: upcomingLabel || { fr: 'À venir', en: 'Upcoming' },
+    };
+  }
+
+  if (jstMidnightMs > endMs) {
+    return {
+      status: 'completed',
+      currentDay: 15,
+      maxAvailableDay: 15,
+      statusLabel: { fr: 'Terminé', en: 'Completed' },
+    };
+  }
+
+  const currentDay = Math.max(1, Math.min(15, Math.round((jstMidnightMs - startMs) / 86400000) + 1));
+  // On Day N, at least Day (N - 1) has completed results, or Day N if Tokyo time >= 18:00 JST (or once API confirms Day N results)
+  const maxAvailableDay = jstHour >= 18 ? currentDay : Math.max(1, currentDay - 1);
+
+  return {
+    status: 'live',
+    currentDay,
+    maxAvailableDay,
+    statusLabel: {
+      fr: `En cours • J${currentDay}`,
+      en: `Ongoing • D${currentDay}`,
+    },
+  };
+}
+
 const BASHO_2026_CALENDAR = [
   {
     bashoId: '202601',
@@ -278,9 +332,6 @@ const BASHO_2026_CALENDAR = [
     venue: 'Ryōgoku Kokugikan',
     startDate: '2026-01-11',
     endDate: '2026-01-25',
-    status: 'completed',
-    statusLabel: { fr: 'Terminé', en: 'Completed' },
-    maxAvailableDay: 15,
     defaultYusho: { shikonaEn: 'Aonishiki', shikonaJp: '安青錦　新大' },
   },
   {
@@ -293,9 +344,6 @@ const BASHO_2026_CALENDAR = [
     venue: 'EDION Arena Osaka',
     startDate: '2026-03-08',
     endDate: '2026-03-22',
-    status: 'completed',
-    statusLabel: { fr: 'Terminé', en: 'Completed' },
-    maxAvailableDay: 15,
     defaultYusho: null,
   },
   {
@@ -308,9 +356,6 @@ const BASHO_2026_CALENDAR = [
     venue: 'Ryōgoku Kokugikan',
     startDate: '2026-05-10',
     endDate: '2026-05-24',
-    status: 'completed',
-    statusLabel: { fr: 'Terminé', en: 'Completed' },
-    maxAvailableDay: 15,
     defaultYusho: null,
   },
   {
@@ -323,9 +368,6 @@ const BASHO_2026_CALENDAR = [
     venue: 'IG Arena Nagoya',
     startDate: '2026-07-12',
     endDate: '2026-07-26',
-    status: 'completed',
-    statusLabel: { fr: 'Terminé', en: 'Completed' },
-    maxAvailableDay: 15,
     defaultYusho: null,
   },
   {
@@ -338,9 +380,6 @@ const BASHO_2026_CALENDAR = [
     venue: 'Ryōgoku Kokugikan',
     startDate: '2026-09-13',
     endDate: '2026-09-27',
-    status: 'live',
-    statusLabel: { fr: 'En cours • J9', en: 'Ongoing • D9' },
-    maxAvailableDay: 10,
     defaultYusho: null,
   },
   {
@@ -353,12 +392,13 @@ const BASHO_2026_CALENDAR = [
     venue: 'Fukuoka Kokusai Center',
     startDate: '2026-11-08',
     endDate: '2026-11-22',
-    status: 'upcoming',
-    statusLabel: { fr: 'À venir (Nov.)', en: 'Upcoming (Nov.)' },
-    maxAvailableDay: 0,
+    upcomingLabel: { fr: 'À venir (Nov.)', en: 'Upcoming (Nov.)' },
     defaultYusho: null,
   },
-];
+].map((basho) => ({
+  ...basho,
+  ...computeBashoDynamicTiming(basho.startDate, basho.endDate, basho.upcomingLabel),
+}));
 
 const KIMARITE_I18N = {
   fr: {
@@ -399,13 +439,19 @@ const KIMARITE_I18N = {
   },
 };
 
+const defaultActiveBasho =
+  BASHO_2026_CALENDAR.find((b) => b.status === 'live') ||
+  BASHO_2026_CALENDAR.slice().reverse().find((b) => b.status === 'completed') ||
+  BASHO_2026_CALENDAR[4];
+
 // Application State
 const state = {
   lang: localStorage.getItem('sumostats_lang') === 'en' ? 'en' : 'fr',
-  selectedBashoId: '202609',
-  selectedDay: 8,
+  selectedBashoId: defaultActiveBasho.bashoId,
+  selectedDay: defaultActiveBasho.maxAvailableDay || defaultActiveBasho.currentDay || 12,
+  userChangedDayManually: false,
   selectedDivision: 'Makuuchi',
-  standingsFilter: 'all', // 'all' | 'top10' | 'kk' | 'sanyaku'
+  standingsFilter: 'all', // 'all' | 'top10' | 'kk' | 'mk' | 'sanyaku'
   reverseBoutOrder: true,
   spoilersMasked: false,
   searchQuery: '',
@@ -667,9 +713,38 @@ function render2026BashoList() {
     btn.addEventListener('click', () => {
       const bashoId = btn.getAttribute('data-basho');
       const day = parseInt(btn.getAttribute('data-day'), 10);
+      state.userChangedDayManually = true;
       selectBashoAndDay(bashoId, day);
     });
   });
+}
+
+function updateBashoMaxAvailableDay(bashoId, detectedResultDay) {
+  if (!detectedResultDay || detectedResultDay < 1) return false;
+  const basho = BASHO_2026_CALENDAR.find((b) => b.bashoId === bashoId);
+  if (!basho) return false;
+  if (detectedResultDay > basho.maxAvailableDay) {
+    basho.maxAvailableDay = Math.min(15, detectedResultDay);
+    render2026BashoList();
+    return true;
+  }
+  return false;
+}
+
+function inspectBanzukeMaxResultDay(banzukeMap) {
+  if (!banzukeMap || banzukeMap.size === 0) return 0;
+  let maxResultDay = 0;
+  for (const r of banzukeMap.values()) {
+    if (Array.isArray(r.record)) {
+      for (let i = 0; i < r.record.length && i < 15; i++) {
+        const res = (r.record[i]?.result || '').toLowerCase();
+        if (res === 'win' || res === 'loss' || res === 'fusen win' || res === 'fusen loss') {
+          if (i + 1 > maxResultDay) maxResultDay = i + 1;
+        }
+      }
+    }
+  }
+  return maxResultDay;
 }
 
 async function preload2026BashoMetadata() {
@@ -679,6 +754,36 @@ async function preload2026BashoMetadata() {
         const data = await fetchSumoApi(`/basho/${basho.bashoId}`);
         if (data && data.date) {
           state.bashoSummaryMap[basho.bashoId] = data;
+        }
+        // For a live tournament, verify if today's results (e.g. Day 12) are already published on sumo-api.com
+        if (basho.status === 'live' && basho.currentDay > 0) {
+          const banzukeMap = await ensureBanzukeLoaded(basho.bashoId, 'Makuuchi');
+          const banzukeMaxDay = inspectBanzukeMaxResultDay(banzukeMap);
+          if (banzukeMaxDay > 0) {
+            updateBashoMaxAvailableDay(basho.bashoId, banzukeMaxDay);
+          }
+
+          if (basho.maxAvailableDay < basho.currentDay) {
+            try {
+              const todayTorikumi = await fetchSumoApi(
+                `/basho/${basho.bashoId}/torikumi/Makuuchi/${basho.currentDay}`
+              );
+              const bouts = Array.isArray(todayTorikumi?.torikumi) ? todayTorikumi.torikumi : [];
+              const hasResultsToday = bouts.some((m) => Boolean(m.winnerId));
+              if (hasResultsToday) {
+                updateBashoMaxAvailableDay(basho.bashoId, basho.currentDay);
+              }
+            } catch (_) {}
+          }
+
+          if (
+            state.selectedBashoId === basho.bashoId &&
+            !state.userChangedDayManually &&
+            state.selectedDay !== basho.maxAvailableDay &&
+            basho.maxAvailableDay > 0
+          ) {
+            selectBashoAndDay(basho.bashoId, basho.maxAvailableDay);
+          }
         }
       } catch (_) {}
     })
@@ -698,6 +803,10 @@ async function ensureBanzukeLoaded(bashoId, division) {
       map.set(r.rikishiID, r);
     }
     state.banzukeCache[key] = map;
+    const maxResultDay = inspectBanzukeMaxResultDay(map);
+    if (maxResultDay > 0) {
+      updateBashoMaxAvailableDay(bashoId, maxResultDay);
+    }
     return map;
   } catch (_) {
     return new Map();
@@ -828,10 +937,13 @@ async function selectBashoAndDay(bashoId, day) {
     state.currentBashoData = torikumiData;
     if (torikumiData && torikumiData.date) {
       state.bashoSummaryMap[bashoId] = torikumiData;
-      render2026BashoList();
     }
 
     state.currentTorikumi = Array.isArray(torikumiData.torikumi) ? torikumiData.torikumi : [];
+    if (state.currentTorikumi.some((m) => Boolean(m.winnerId))) {
+      updateBashoMaxAvailableDay(bashoId, state.selectedDay);
+    }
+    render2026BashoList();
     renderPrizesStrip(torikumiData);
     renderDailyStatsAndMatches(banzukeMap);
     renderBashoStandings(banzukeMap);
@@ -1016,7 +1128,8 @@ function renderDailyStatsAndMatches(banzukeMap) {
             bashoMeta?.name || state.selectedBashoId,
             state.selectedBashoId,
             state.selectedDay,
-            state.selectedDivision
+            state.selectedDivision,
+            bashoMeta?.maxAvailableDay || 11
           )
         : dict.noFilterMatch(state.searchQuery);
 
@@ -1043,6 +1156,10 @@ function renderDailyStatsAndMatches(banzukeMap) {
       const westKkThreshold = getKkThreshold(state.selectedDivision, bout.westRank);
       const eastIsKk = eastStats.wins >= eastKkThreshold;
       const westIsKk = westStats.wins >= westKkThreshold;
+      const eastIsMk = eastStats.losses + eastStats.absences >= eastKkThreshold;
+      const westIsMk = westStats.losses + westStats.absences >= westKkThreshold;
+      const eastHighlightClass = eastIsKk ? 'is-kachikoshi' : eastIsMk ? 'is-makekoshi' : '';
+      const westHighlightClass = westIsKk ? 'is-kachikoshi' : westIsMk ? 'is-makekoshi' : '';
 
       const eastShortRank = formatShortRank(bout.eastRank);
       const westShortRank = formatShortRank(bout.westRank);
@@ -1069,7 +1186,7 @@ function renderDailyStatsAndMatches(banzukeMap) {
                 ${eastStats.recordText ? `<span class="record-badge">(${eastStats.recordText})</span>` : ''}
                 <span class="rank-badge ${eastTierClass}" title="${bout.eastRank}">${eastShortRank}</span>
                 ${eastStats.shikonaJp ? `<span class="shikona-jp">${eastStats.shikonaJp}</span>` : ''}
-                <span class="shikona-en ${eastIsKk ? 'is-kachikoshi' : ''}">${bout.eastShikona}</span>
+                <span class="shikona-en ${eastHighlightClass}">${bout.eastShikona}</span>
               </div>
               ${eastStats.hoshitoriHtml}
             </div>
@@ -1098,7 +1215,7 @@ function renderDailyStatsAndMatches(banzukeMap) {
             </div>
             <div class="rikishi-main-info">
               <div class="rikishi-name-line">
-                <span class="shikona-en ${westIsKk ? 'is-kachikoshi' : ''}">${bout.westShikona}</span>
+                <span class="shikona-en ${westHighlightClass}">${bout.westShikona}</span>
                 ${westStats.shikonaJp ? `<span class="shikona-jp">${westStats.shikonaJp}</span>` : ''}
                 <span class="rank-badge ${westTierClass}" title="${bout.westRank}">${westShortRank}</span>
                 ${westStats.recordText ? `<span class="record-badge">(${westStats.recordText})</span>` : ''}
@@ -1194,13 +1311,15 @@ function renderBashoStandings(banzukeMap) {
     .map((r, idx) => {
       const tierClass = getRankTierClass(r.rank);
       const isKk = r.wins >= kkThreshold;
+      const isMk = r.losses + r.absences >= kkThreshold;
+      const highlightClass = isKk ? 'is-kachikoshi' : isMk ? 'is-makekoshi' : '';
       return `
         <div class="podium-card ${idx === 0 ? 'podium-rank-1' : ''}">
           <div class="podium-left">
             <div class="podium-medal">#${idx + 1}</div>
             <div>
               <div class="podium-name">
-                <span class="shikona-en ${isKk ? 'is-kachikoshi' : ''}">${r.shikonaEn}</span>
+                <span class="shikona-en ${highlightClass}">${r.shikonaEn}</span>
                 ${r.shikonaJp ? `<span class="shikona-jp">${r.shikonaJp}</span>` : ''}
                 <span class="rank-badge ${tierClass}">${r.shortRank}</span>
               </div>
@@ -1216,12 +1335,14 @@ function renderBashoStandings(banzukeMap) {
     })
     .join('');
 
-  // Filter rows according to active standingsFilter ('all' | 'top10' | 'kk' | 'sanyaku')
+  // Filter rows according to active standingsFilter ('all' | 'top10' | 'kk' | 'mk' | 'sanyaku')
   let filteredRows = rows;
   if (state.standingsFilter === 'top10') {
     filteredRows = rows.slice(0, 10);
   } else if (state.standingsFilter === 'kk') {
     filteredRows = rows.filter((r) => r.wins >= kkThreshold);
+  } else if (state.standingsFilter === 'mk') {
+    filteredRows = rows.filter((r) => r.losses + r.absences >= kkThreshold);
   } else if (state.standingsFilter === 'sanyaku') {
     filteredRows = rows.filter((r) => isSanyakuRank(r.rank));
   }
@@ -1236,7 +1357,8 @@ function renderBashoStandings(banzukeMap) {
       const globalPos = rows.indexOf(r) + 1;
       const isLeader = r.wins === maxWins && maxWins > 0;
       const isKk = r.wins >= kkThreshold;
-      const isMk = r.losses >= kkThreshold;
+      const isMk = r.losses + r.absences >= kkThreshold;
+      const highlightClass = isKk ? 'is-kachikoshi' : isMk ? 'is-makekoshi' : '';
       const tierClass = getRankTierClass(r.rank);
 
       let statusBadgeHtml = `<span class="st-status-badge st-status-neutral">${dict.stInPlayBadge}</span>`;
@@ -1257,7 +1379,7 @@ function renderBashoStandings(banzukeMap) {
           </td>
           <td class="col-rikishi">
             <div class="st-rikishi-cell">
-              <span class="shikona-en ${isKk ? 'is-kachikoshi' : ''}">${r.shikonaEn}</span>
+              <span class="shikona-en ${highlightClass}">${r.shikonaEn}</span>
               ${r.shikonaJp ? `<span class="shikona-jp">${r.shikonaJp}</span>` : ''}
             </div>
           </td>
@@ -1532,10 +1654,16 @@ function initApp() {
 
   // Previous / Next Day buttons
   document.getElementById('btn-prev-day').addEventListener('click', () => {
-    if (state.selectedDay > 1) selectBashoAndDay(state.selectedBashoId, state.selectedDay - 1);
+    if (state.selectedDay > 1) {
+      state.userChangedDayManually = true;
+      selectBashoAndDay(state.selectedBashoId, state.selectedDay - 1);
+    }
   });
   document.getElementById('btn-next-day').addEventListener('click', () => {
-    if (state.selectedDay < 15) selectBashoAndDay(state.selectedBashoId, state.selectedDay + 1);
+    if (state.selectedDay < 15) {
+      state.userChangedDayManually = true;
+      selectBashoAndDay(state.selectedBashoId, state.selectedDay + 1);
+    }
   });
 
   // Search box

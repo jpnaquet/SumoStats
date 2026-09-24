@@ -12,12 +12,12 @@ Bilingual (**English 🇬🇧 / French 🇫🇷**) web application and **Progres
 
 - **Full 2026 Calendar (6 Honbasho)**: Hatsu (January), Haru (March), Natsu (May), Nagoya (July), Aki (September), and Kyushu (November), with day-by-day navigation (**Days 1 to 15 / Senshuraku**).
 - **Analytical Views & Smart Anti-Spoiler Mode**:
-  1. **Daily Bouts (Torikumi)**: East vs. West balance, winning techniques (*Kimarite*), historical Head-to-Head (*H2H*) matchups, and **Kachi-koshi yellow highlight** (8+ wins in *Makuuchi*/*Jūryō*, 4+ in lower divisions).
+  1. **Daily Bouts (Torikumi)**: East vs. West balance, winning techniques (*Kimarite*), historical Head-to-Head (*H2H*) matchups, **Kachi-koshi yellow highlight** (8+ wins in *Makuuchi*/*Jūryō*, 4+ in lower divisions), and **Make-koshi red highlight** (8+ losses/absences in *Makuuchi*/*Jūryō*, 4+ in lower divisions).
   2. **Smart Anti-Spoiler Mode (`Spoilers: Hidden`)**:
      - Masks today's bout winners and *kimarite* while displaying each rikishi's **previous day (Day $N-1$) record** and **15-day Hoshitori progression dots** from Day 1 up to Day $N-1$.
      - Filters the **Head-to-Head (H2H)** modal to only display and tally official bouts up to **tournament $N-1$**, preventing any spoiler from the current tournament.
-     - Highlights in yellow the names of rikishis who have already secured their **Kachi-koshi** (both when spoilers are shown and when masked).
-  3. **Cumulative Tournament Standings (Yūshō Race)**: Live top-3 podium, filters (*Yūshō Race / Sanyaku / Kachi-koshi*), win percentages, and 15-day progression strip.
+     - Highlights in yellow the names of rikishis who have already secured their **Kachi-koshi**, and in red those with **Make-koshi** (both when spoilers are shown and when masked).
+  3. **Cumulative Tournament Standings (Yūshō Race)**: Live top-3 podium, filters (*Yūshō Race / Sanyaku / Kachi-koshi / Make-koshi*), win percentages, and 15-day progression strip.
 - **Sumo-API Webhooks Center (`HMAC-SHA256` + Live SSE Stream)**:
   - Official `POST /api/webhook/ingest` receiver verifying the cryptographic `X-Webhook-Signature` header.
   - Instant real-time push updates to connected browsers via **Server-Sent Events (`GET /api/webhook/stream`)**.
@@ -53,14 +53,14 @@ Application web bilingue (**Français 🇫🇷 / Anglais 🇬🇧**) et **Progre
 
 ### ✨ Fonctionnalités Principales
 
-- **Calendrier 2026 Complet (6 Honbasho)** : Hatsu (Janvier), Haru (Mars), Natsu (Mai), Nagoya (Juillet), Aki (Septembre) et Kyushu (Novembre), avec navigation jour par jour (**Jours 1 à 15 / Senshuraku**).
+- **Calendrier 2026 Complet (6 Honbasho)** : Hatsu (Janvier), Haru (Mars), Natsu (Mai), Nagoya (Juillet), Aki (Septembre) et Kyushu (Novembre), avec navigation jour par jour (**Jours 1 à 15 / Senshuraku**) et calcul dynamique du jour en cours et des résultats disponibles.
 - **Vues Analytiques & Mode Anti-Spoiler Intelligent** :
-  1. **Combats du Jour (Torikumi)** : Résultats Est vs Ouest, techniques victorieuses (*Kimarite*), face-à-face historique (*Head-to-Head*) et **surlignage en jaune des rikishis en Kachi-koshi** ($\ge 8$ victoires en *Makuuchi*/*Jūryō*, $\ge 4$ dans les autres divisions).
+  1. **Combats du Jour (Torikumi)** : Résultats Est vs Ouest, techniques victorieuses (*Kimarite*), face-à-face historique (*Head-to-Head*), **surlignage en jaune des rikishis en Kachi-koshi** ($\ge 8$ victoires en *Makuuchi*/*Jūryō*, $\ge 4$ dans les autres divisions) et **surlignage en rouge des rikishis en Make-koshi** ($\ge 8$ défaites/absences en *Makuuchi*/*Jūryō*, $\ge 4$ dans les autres divisions).
   2. **Mode Anti-Spoiler (`Spoilers : Masqués`)** :
      - Masque les vainqueurs et *kimarite* du jour tout en affichant pour chaque rikishi **la situation de la veille (Jour $N-1$)** : son bilan `(V-D)` ainsi que la ligne de ronds (*Hoshitori*) indiquant sa progression depuis le Jour 1 jusqu'au Jour $N-1$.
      - Dans la fenêtre **Face-à-Face (H2H)**, exclut les résultats du tournoi en cours et n'affiche que les confrontations jusqu'au **tournoi $N-1$** (avec recalcul automatique du bilan de carrière).
-     - Surligne en jaune le nom des rikishis ayant obtenu leur **Kachi-koshi** (dans tous les cas, que les spoilers soient affichés ou masqués).
-  3. **Classement Cumulé du Tournoi (Course au Yūshō)** : Podium en temps réel, filtres *Course au Yūshō / Sanyaku / Kachi-koshi*, pourcentage de victoires et frise de progression des 15 jours.
+     - Surligne en jaune le nom des rikishis ayant obtenu leur **Kachi-koshi** et en rouge ceux en **Make-koshi** (dans tous les cas, que les spoilers soient affichés ou masqués).
+  3. **Classement Cumulé du Tournoi (Course au Yūshō)** : Podium en temps réel, filtres *Course au Yūshō / Sanyaku / Kachi-koshi / Make-koshi*, pourcentage de victoires et frise de progression des 15 jours.
 - **Centre Webhooks Sumo-API (`HMAC-SHA256` + Flux SSE)** :
   - Récepteur officiel `POST /api/webhook/ingest` vérifiant la signature cryptographique `X-Webhook-Signature`.
   - Diffusion instantanée aux navigateurs connectés via **Server-Sent Events (`GET /api/webhook/stream`)**.

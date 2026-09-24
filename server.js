@@ -38,6 +38,16 @@ let webhookConfig = {
 };
 let customDestinationSet = Boolean(process.env.PUBLIC_URL);
 
+function getActiveBashoDay() {
+  const jstDate = new Date(Date.now() + 9 * 3600 * 1000);
+  const jstMidnightMs = Date.UTC(jstDate.getUTCFullYear(), jstDate.getUTCMonth(), jstDate.getUTCDate());
+  const startMs = Date.UTC(2026, 8, 13); // 2026-09-13 (Aki Basho start)
+  const day = Math.round((jstMidnightMs - startMs) / 86400000) + 1;
+  return Math.max(1, Math.min(15, day));
+}
+
+const initialBashoDay = getActiveBashoDay();
+
 const webhookEvents = [
   {
     id: 'evt-init-1',
@@ -45,13 +55,13 @@ const webhookEvents = [
     type: 'matchResults',
     verified: true,
     source: 'sumo-api.com (Initialisation)',
-    summary: 'Aki Basho 2026 (202609) • Jour 9 Makuuchi — Résultats synchronisés',
+    summary: `Aki Basho 2026 (202609) • Jour ${initialBashoDay} Makuuchi — Résultats synchronisés`,
     payload: {
       bashoId: '202609',
       division: 'Makuuchi',
-      day: 9,
+      day: initialBashoDay,
       matchesUpdated: 21,
-      leader: 'Onosato (8-1)',
+      leader: 'Onosato',
     },
   },
 ];
@@ -257,7 +267,7 @@ const server = http.createServer(async (req, res) => {
       const reqData = bodyBuf.length ? JSON.parse(bodyBuf.toString('utf-8')) : {};
       const simType = reqData.type || 'matchResults';
       const bashoId = reqData.bashoId || '202609';
-      const day = reqData.day || 9;
+      const day = reqData.day || getActiveBashoDay();
 
       const samplePayloads = {
         newBasho: {

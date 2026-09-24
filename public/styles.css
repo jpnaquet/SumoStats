@@ -1007,6 +1007,19 @@ body.spoilers-masked .rikishi-cell.is-winner .shikona-en.is-kachikoshi {
   box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.65);
 }
 
+.shikona-en.is-makekoshi,
+.rikishi-cell.is-winner .shikona-en.is-makekoshi,
+.rikishi-cell.is-loser .shikona-en.is-makekoshi,
+body.spoilers-masked .rikishi-cell.is-winner .shikona-en.is-makekoshi,
+body.spoilers-masked .rikishi-cell.is-loser .shikona-en.is-makekoshi {
+  background: #fca5a5;
+  color: #450a0a;
+  padding: 0.08rem 0.42rem;
+  border-radius: 4px;
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.7);
+}
+
 .shikona-jp {
   font-family: 'Noto Serif JP', serif;
   font-size: 0.78rem;
